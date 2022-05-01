@@ -7,7 +7,7 @@ class Obstacle {
     color wiggleCol;
     color wiggleCol2;
     float rad;
-    SoundFile note;
+    MediaPlayer note;
     
     //  wiggling
     float timeWiggledStarted;
@@ -42,14 +42,17 @@ class Obstacle {
         this.wiggleCol2 = c;
     }
     
-    void setNote(SoundFile note) { this.note = note; }
+    MediaPlayer getNote() { return this.note; }
+    void setNote(MediaPlayer note) {
+        this.note = note;
+        println("Set note to " + this.note);
+    }
     
     void setRadius(float r) { this.rad = r; }
 
     void wiggle() {
         isWiggling = true;
         timeWiggledStarted = millis();
-        note.play();
     }
     
     void updateWigglePos() {
@@ -90,6 +93,7 @@ class Obstacle {
     }
     
     void playNote() {
-        note.play();
+        note.seekTo(0);
+        note.start();
     }
 }

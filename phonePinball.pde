@@ -13,17 +13,30 @@ import android.hardware.SensorEventListener;
 import android.os.Bundle;
 
 import processing.sound.*;
-//import android.media.MediaPlayer;
-//import android.content.res.Resources;
-//import android.content.res.AssetFileDescriptor;
-//import android.content.res.AssetManager;
+import android.media.MediaPlayer;
+import android.content.res.Resources;
+import android.content.res.AssetFileDescriptor;
+import android.content.res.AssetManager;
+import android.app.Activity;
+import android.media.MediaPlayer.OnPreparedListener;
+
+import java.util.Map;
 
 Context context;
 SensorManager manager;
 Sensor sensor;
-//MediaPlayer mp;
-//AssetFileDescriptor fd;
 AccelerometerListener listener;
+
+//  sound
+String[] noteFileNames = new String[5];
+MediaPlayer[] noteMPs = new MediaPlayer[5];
+HashMap<MediaPlayer, Boolean> mediaPreparedMap;
+
+MediaPlayer snd = new MediaPlayer();
+AssetFileDescriptor fd;
+Activity act;
+
+Boolean hasRunSetup = false;
 
 float ax, ay, az;
 
@@ -48,7 +61,8 @@ final int NUM_BUMPERS = 10;
 Circle ball;
 Obstacle obstacle1;
 Obstacle[] obstacles = new Obstacle[NUM_BUMPERS];
-SoundFile[] notes = new SoundFile[5];
+
+
 
 boolean mouseIsDown = false;
 
@@ -64,24 +78,46 @@ void setup() {
     listener = new AccelerometerListener();
     manager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME);
     textFont(createFont("SansSerif", 20 * displayDensity));
-    
-    //fd = context.getApplicationContext().getAssets().openFd("short.mp3");
-    //mp = MediaPlayer.create(context, android.R.sound_file_1);
-    //mp.setDataSource(fd.getFileDescriptor(), fd.getStartOffset(), fd.getLength());
-    // audioFile = new SoundFile(this, "nice-work.wav");
-    notes[0] = new SoundFile(this, "c-sharp.wav");
-    notes[1] = new SoundFile(this, "d-sharp.wav");
-    notes[2] = new SoundFile(this, "f-sharp.wav");
-    notes[3] = new SoundFile(this, "g-sharp.wav");
-    notes[4] = new SoundFile(this, "a-sharp.wav");
+
+    noteFileNames[0] = "c-sharp.wav";
+    noteFileNames[1] = "d-sharp.wav";
+    noteFileNames[2] = "f-sharp.wav";
+    noteFileNames[3] = "g-sharp.wav";
+    noteFileNames[4] = "a-sharp.wav";
+
+    mediaPreparedMap = new HashMap<MediaPlayer, Boolean>();
+
+    setUpAllMediaPlayers();
+
+    try {
+        fd = context.getAssets().openFd("nice-work.wav");
+        snd.setDataSource(fd.getFileDescriptor(), fd.getStartOffset(), fd.getLength());
+        snd.prepare();
+       //snd.setOnPreparedListener(new onPreparedListener() {
+       //    @Override
+       //    public void onPrepared(MediaPlayer mp) {
+       //        println("Media player is prepared");
+       //        mediaPreparedMap.put(mp, true);
+       //    };
+       //});
+    }
+    catch (IllegalArgumentException e) {
+        e.printStackTrace();
+    }
+    catch (IllegalStateException e) {
+        e.printStackTrace();
+    }
+    catch (IOException e) {
+        e.printStackTrace();
+    }
     
     for (int i = 0; i < NUM_BUMPERS; i++) {
         float x = random(100, displayWidth - 100);
         float y = (((displayHeight - 300) / NUM_BUMPERS) * i) + 150;
         obstacles[i] = new Obstacle(new PVector(x, y), 75, 75);
-        obstacles[i].setNote(notes[i % 5]);
         // obstacles[i].setColor(color(175, 100, 100));
         // obstacles[i].setSecondaryColor(color(200, 100, 100));
+        obstacles[i].setNote(noteMPs[i % 5]);
     }
     
     circlePos = new PVector(displayWidth / 2, displayHeight / 2);
@@ -99,6 +135,8 @@ void setup() {
     ball.setColor(ballCol);
     obstacle1 = new Obstacle(new PVector(200, 500), 50, 70);
     obstacle1.setColor(color(255, 100, 100));
+
+    hasRunSetup = true;
 }
 
 void draw() {
@@ -137,6 +175,23 @@ void draw() {
             if (ball.doesCollideWithObstacle(obstacles[i])) {
                 ball.bounceAgainstCircleObstacle(obstacles[i]);
                 obstacles[i].wiggle();
+                println("Trying to bump: " + mediaPreparedMap.size());
+                for(MediaPlayer mp : mediaPreparedMap.keySet()) {
+                    println("MP: " + mp);
+                    println("Value: " + mediaPreparedMap.get(mp));
+                    println("Obstacle value: " + obstacles[i].getNote());
+                }
+
+                
+                if (mediaPreparedMap.containsKey(obstacles[i].getNote())) {
+                    println("Contains key");
+                    if (mediaPreparedMap.get(obstacles[i].getNote())) {
+                        println("true");
+                        obstacles[i].playNote();
+                    } else {
+                        println("false");
+                    }
+                }
             }
         }
         ball.updatePos();
@@ -176,45 +231,142 @@ void mousePressed() {
     ball.setVelocity(0, 0);
     // diameter = random(100, 300);
     ball.pos.set(mouseX, mouseY);
+    // try {
+    //   //if (!snd.isPlaying()) {
+    //   //  println("Preparing");
+    //   //  snd.prepare();
+    //   //} else {
+    //   //  println("Seeking to zero");
+    //   //  snd.prepare();
+    //   //  snd.seekTo(0);
+    //   //}
+    //     println("preparing when pressed");
+    //     snd.prepare();
+
+    // }
+    // catch (IllegalArgumentException e) {
+    //     e.printStackTrace();
+    // }
+    // catch (IllegalStateException e) {
+    //     e.printStackTrace();
+    // }
+    // catch (IOException e) {
+    //     e.printStackTrace();
+    // }
+    snd.seekTo(0);
+    snd.start();
 }
 
 void mouseReleased() {
     mouseIsDown = false;
 }
 
+void setUpAllMediaPlayers() {
+    for (int i = 0; i < 5; i++) {
+        try {
+            noteMPs[i] = new MediaPlayer();
+            fd = context.getAssets().openFd(noteFileNames[i]);
+            noteMPs[i].setDataSource(fd.getFileDescriptor(), fd.getStartOffset(), fd.getLength());
+            noteMPs[i].setOnPreparedListener(new OnPreparedListener() {
+              public void onPrepared(MediaPlayer mp) {
+                if (mediaPreparedMap.containsKey(mp)) {
+                    mediaPreparedMap.replace(mp, true);
+                } else {
+                    mediaPreparedMap.put(mp, true);
+                }
+              }
+            });
+            noteMPs[i].prepare();
+        }
+        catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
+        catch (IllegalStateException e) {
+            e.printStackTrace();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }    
+}
+
+@Override
 public void onResume() {
     println("onResume");
     super.onResume();
     if (manager != null) {
         manager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME);
     }
+    if (hasRunSetup) {
+        setUpAllMediaPlayers();
+    }
 }
 
+@Override
 public void onPause() {
     println("onPause");
     super.onPause();
     if (manager != null) {
         manager.unregisterListener(listener);
     }
+    if (snd != null) {
+        snd.release();
+        snd = null;
+    }
     for (int i = 0; i < 5; i++) {
-        notes[i].stop();
+        // if (notes[i] != null) {
+        //     notes[i].stop();
+        // }
+        if (noteMPs[i] != null) {
+            noteMPs[i].release();
+            noteMPs[i] = null;
+            mediaPreparedMap.replace(noteMPs[i], false);
+        }
     }
 }
 
 @Override
 public void onCreate(Bundle savedInstanceState) {
-    println("on create called!");
+    println("onCreate");
     println(savedInstanceState);
     super.onCreate(savedInstanceState);
 }
 
 @Override
+public void onStop() {
+    println("onStop");
+    super.onStop();
+    if (snd != null) {
+        snd.release();
+        snd = null;
+    }
+    for (int i = 0; i < 5; i ++) {
+        if (noteMPs[i] != null) {
+            noteMPs[i].release();
+            noteMPs[i] = null;
+            mediaPreparedMap.replace(noteMPs[i], false);
+        }
+    }
+}
+
+@Override
 public void onDestroy() {
-    println("On destroy");
+    println("onDestroy");
     // audioFile.stop();
     super.onDestroy();
+    if (snd != null) {
+        snd.release();
+        snd = null;
+    }
     for (int i = 0; i < 5; i++) {
-        notes[i].stop();
+        // if (notes[i] != null) {
+        //     notes[i].stop();
+        // }
+        if (noteMPs[i] != null) {
+            noteMPs[i].release();
+            noteMPs[i] = null;
+            mediaPreparedMap.replace(noteMPs[i], false);
+        }
     }
 }
 
