@@ -96,13 +96,6 @@ void setup() {
         fd = context.getAssets().openFd("nice-work.wav");
         snd.setDataSource(fd.getFileDescriptor(), fd.getStartOffset(), fd.getLength());
         snd.prepare();
-       //snd.setOnPreparedListener(new onPreparedListener() {
-       //    @Override
-       //    public void onPrepared(MediaPlayer mp) {
-       //        println("Media player is prepared");
-       //        mediaPreparedMap.put(mp, true);
-       //    };
-       //});
     }
     catch (IllegalArgumentException e) {
         e.printStackTrace();
@@ -117,7 +110,11 @@ void setup() {
     for (int i = 0; i < NUM_BUMPERS; i++) {
         float x = random(100, displayWidth - 100);
         float y = (((displayHeight - 300) / NUM_BUMPERS) * i) + 150;
-        obstacles[i] = new Obstacle(new PVector(x, y), 20 * displayDensity, 20 * displayDensity);
+        if (i%2 == 0) {
+            obstacles[i] = new GoodObstacle(new PVector(x, y), 20 * displayDensity, 20 * displayDensity);
+        } else {
+            obstacles[i] = new BadObstacle(new PVector(x, y), 20 * displayDensity, 20 * displayDensity);
+        }
         // obstacles[i].setColor(color(175, 100, 100));
         // obstacles[i].setSecondaryColor(color(200, 100, 100));
         obstacles[i].setNote(noteMPs[i % NUM_NOTES]);
@@ -136,8 +133,7 @@ void setup() {
     
     ball = new Circle();
     ball.setColor(ballCol);
-    obstacle1 = new Obstacle(new PVector(200, 500), 50, 70);
-    obstacle1.setColor(color(255, 100, 100));
+    obstacle1 = new NeutralObstacle(new PVector(200, 500), 50, 70);
 
     hasRunSetup = true;
     timeTouchBegan = millis();
@@ -162,12 +158,12 @@ void draw() {
         }
         hasChanged = false;
     }
-    if (ball.doesCollideWithObstacle(obstacle1)) {
-        obstacle1.setColor(color(0, 100, 100));
-    }
-    else {
-        obstacle1.setColor(obstacleCol);
-    }
+    // if (ball.doesCollideWithObstacle(obstacle1)) {
+    //     obstacle1.setColor(color(0, 100, 100));
+    // }
+    // else {
+    //     obstacle1.setColor(obstacleCol);
+    // }
     if (mouseIsDown && millis() - timeTouchBegan > 1000) {
         // println("We're resetting, mouse is Down");
         timeTouchBegan = millis(); // reset every second
@@ -234,41 +230,11 @@ void draw() {
 }
 
 void mousePressed() {
-    println("mousePressed");
     mouseIsDown = true;
     timeTouchBegan = millis();
-    // float newHue = random(360);
-    // ballCol = color(newHue, 100, 100);
-    // ball.setColor(ballCol);
-    // ball.setVelocity(0, 0);
-    // // diameter = random(100, 300);
-    // ball.pos.set(mouseX, mouseY);
-    // try {
-    //   //if (!snd.isPlaying()) {
-    //   //  println("Preparing");
-    //   //  snd.prepare();
-    //   //} else {
-    //   //  println("Seeking to zero");
-    //   //  snd.prepare();
-    //   //  snd.seekTo(0);
-    //   //}
-    //     println("preparing when pressed");
-    //     snd.prepare();
-
-    // }
-    // catch (IllegalArgumentException e) {
-    //     e.printStackTrace();
-    // }
-    // catch (IllegalStateException e) {
-    //     e.printStackTrace();
-    // }
-    // catch (IOException e) {
-    //     e.printStackTrace();
-    // }
 }
 
 void mouseReleased() {
-    println("mouseReleased");
     mouseIsDown = false;
 }
 

@@ -86,10 +86,8 @@ class Circle {
         float collisionDistSq = collisionDist * collisionDist;
         
         if (distSq < collisionDistSq) {
-            o.setColor(color(360, 100, 100));
             return true;
         } else {
-            o.setColor(color(180, 100, 100));
             return false;
         }
     }

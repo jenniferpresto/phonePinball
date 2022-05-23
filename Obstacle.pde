@@ -1,4 +1,4 @@
-class Obstacle {
+abstract class Obstacle {
     PVector pos;
     PVector wigglePos;
     float w, h;
@@ -20,13 +20,14 @@ class Obstacle {
         this.w = w;
         this.h = h;
         this.rad = 35 * displayDensity;
-        col = color(247, 66, 97);
-        col2 = color(231, 61, 88);
-        wiggleCol = color(8, 66, 97);
-        wiggleCol2 = color(21, 61, 88);
+        col = color(247, 66, 97); // bluish purple
+        col2 = color(231, 61, 88); // lighter, grayer blue
+        wiggleCol = color(8, 66, 97); // orange red
+        wiggleCol2 = color(21, 61, 88); // orange beige
     }
     
     void setColor(color c) {
+        println("set color");
         this.col = c;
     }
     
@@ -95,5 +96,27 @@ class Obstacle {
     void playNote() {
         note.seekTo(0);
         note.start();
+    }
+}
+
+class NeutralObstacle extends Obstacle {
+    NeutralObstacle(PVector pos, float w, float h) {
+        super(pos, w, h);
+        this.col = color(0, 0, 60);
+        this.col2 = color(0, 0, 85);
+    }
+}
+
+class GoodObstacle extends Obstacle {
+    GoodObstacle(PVector pos, float w, float h) {
+        super(pos, w, h);
+        this.col = color(127, 76, 70); // green
+        this.col2 = color(127, 76, 90); // brighter green
+    }
+}
+
+class BadObstacle extends Obstacle {
+    BadObstacle(PVector pos, float w, float h) {
+        super(pos, w, h);
     }
 }
