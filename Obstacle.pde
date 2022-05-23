@@ -1,3 +1,10 @@
+public static enum ObstacleType {
+    NEUTRAL,
+    GOOD,
+    BAD,
+    NONE
+};
+
 abstract class Obstacle {
     PVector pos;
     PVector wigglePos;
@@ -8,6 +15,9 @@ abstract class Obstacle {
     color wiggleCol2;
     float rad;
     MediaPlayer note;
+    boolean isHit = false;
+
+    ObstacleType type;
     
     //  wiggling
     int timeWiggleStarted;
@@ -20,11 +30,16 @@ abstract class Obstacle {
         this.w = w;
         this.h = h;
         this.rad = 35 * displayDensity;
+        this.type = ObstacleType.NONE;
         col = color(247, 66, 97); // bluish purple
         col2 = color(231, 61, 88); // lighter, grayer blue
         wiggleCol = color(8, 66, 97); // orange red
         wiggleCol2 = color(21, 61, 88); // orange beige
     }
+
+    ObstacleType getType() { return this.type; }
+
+    boolean getIsHit() { return this.isHit; }
     
     void setColor(color c) {
         println("set color");
@@ -88,9 +103,9 @@ abstract class Obstacle {
         } else {
             fill(col2);
         }
-        rect(displayPos.x, displayPos.y,  w, h);
+        rect(displayPos.x, displayPos.y,  w * displayDensity, h * displayDensity);
         fill(0);
-        circle(displayPos.x, displayPos.y, 10);
+        circle(displayPos.x, displayPos.y, 10 * displayDensity);
     }
     
     void playNote() {
@@ -104,6 +119,8 @@ class NeutralObstacle extends Obstacle {
         super(pos, w, h);
         this.col = color(0, 0, 60);
         this.col2 = color(0, 0, 85);
+        this.rad = 25 * displayDensity;
+        this.type = ObstacleType.NEUTRAL;
     }
 }
 
@@ -112,11 +129,21 @@ class GoodObstacle extends Obstacle {
         super(pos, w, h);
         this.col = color(127, 76, 70); // green
         this.col2 = color(127, 76, 90); // brighter green
+        this.type = ObstacleType.GOOD;
+    }
+
+    @Override
+    void wiggle() {
+        super.wiggle();
+        isHit = true;
+        this.col = color(0, 0, 66); // gray
+        this.col2 = color(0, 0, 50); // darker gray
     }
 }
 
 class BadObstacle extends Obstacle {
     BadObstacle(PVector pos, float w, float h) {
         super(pos, w, h);
+        this.type = ObstacleType.BAD;
     }
 }

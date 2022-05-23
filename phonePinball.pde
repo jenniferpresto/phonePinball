@@ -31,6 +31,9 @@ AccelerometerListener listener;
 int NUM_NOTES = 5;
 final int NUM_BUMPERS = 10;
 
+//  scoring
+int score = 0;
+
 //  sound
 String[] noteFileNames = new String[NUM_NOTES];
 MediaPlayer[] noteMPs = new MediaPlayer[NUM_BUMPERS];
@@ -51,9 +54,6 @@ float circleX, circleY;
 float velX, velY;
 float accX, accY;
 float maxVel = 35;
-// float bouncePct = -0.55;
-// float friction = 0.997;
-// float diameter = 150;
 
 boolean hasChanged = false;
 color backCol;
@@ -111,9 +111,9 @@ void setup() {
         float x = random(100, displayWidth - 100);
         float y = (((displayHeight - 300) / NUM_BUMPERS) * i) + 150;
         if (i%2 == 0) {
-            obstacles[i] = new GoodObstacle(new PVector(x, y), 20 * displayDensity, 20 * displayDensity);
+            obstacles[i] = new GoodObstacle(new PVector(x, y), 20, 20);
         } else {
-            obstacles[i] = new BadObstacle(new PVector(x, y), 20 * displayDensity, 20 * displayDensity);
+            obstacles[i] = new BadObstacle(new PVector(x, y), 20, 20);
         }
         // obstacles[i].setColor(color(175, 100, 100));
         // obstacles[i].setSecondaryColor(color(200, 100, 100));
@@ -133,7 +133,7 @@ void setup() {
     
     ball = new Circle();
     ball.setColor(ballCol);
-    obstacle1 = new NeutralObstacle(new PVector(200, 500), 50, 70);
+    obstacle1 = new NeutralObstacle(new PVector(200, 500), 15, 15);
 
     hasRunSetup = true;
     timeTouchBegan = millis();
@@ -158,12 +158,7 @@ void draw() {
         }
         hasChanged = false;
     }
-    // if (ball.doesCollideWithObstacle(obstacle1)) {
-    //     obstacle1.setColor(color(0, 100, 100));
-    // }
-    // else {
-    //     obstacle1.setColor(obstacleCol);
-    // }
+
     if (mouseIsDown && millis() - timeTouchBegan > 1000) {
         // println("We're resetting, mouse is Down");
         timeTouchBegan = millis(); // reset every second
@@ -181,21 +176,25 @@ void draw() {
             ball.bounceAgainstCircleObstacle(obstacle1);
         }
         for (int i = 0; i < NUM_BUMPERS; i++) {
+            boolean shouldReact = true;
             if (ball.doesCollideWithObstacle(obstacles[i])) {
-                ball.bounceAgainstCircleObstacle(obstacles[i]);
-                obstacles[i].wiggle();
-                // for(MediaPlayer mp : mediaPreparedMap.keySet()) {
-                //     // println("MP: " + mp);
-                //     // println("Value: " + mediaPreparedMap.get(mp));
-                //     // println("Obstacle value: " + obstacles[i].getNote());
-                // }
-
-                
-                if (mediaPreparedMap.containsKey(obstacles[i].getNote())) {
-                    if (mediaPreparedMap.get(obstacles[i].getNote())) {
-                        obstacles[i].playNote();
+                if (obstacles[i].getType() == ObstacleType.GOOD) {
+                    if(obstacles[i].getIsHit()) {
+                        shouldReact = false;
                     } else {
-                        // println("false");
+                        score += 5;
+                        //  TODO: check all obstacles to see if finished
+                    }
+                } else if (obstacles[i].getType() == ObstacleType.BAD) {
+                    score -= 5;
+                }
+                ball.bounceAgainstCircleObstacle(obstacles[i]);
+                if (shouldReact) {
+                    obstacles[i].wiggle();
+                    if (mediaPreparedMap.containsKey(obstacles[i].getNote())) {
+                        if (mediaPreparedMap.get(obstacles[i].getNote())) {
+                            obstacles[i].playNote();
+                        }
                     }
                 }
             }
@@ -203,11 +202,8 @@ void draw() {
         ball.updatePos();
     }
     strokeWeight(1);
+    //  neutral obstacle plus the pointer to the ball
     obstacle1.draw();
-    for (int i = 0; i < NUM_BUMPERS; i++) {
-        obstacles[i].draw();
-    }
-    ball.draw();
     PVector normal = ball.getNormalizedNormal(obstacle1);
     PVector normalCopy = normal.copy();
     normalCopy.mult(200);
@@ -215,9 +211,13 @@ void draw() {
     endOfLine.add(normalCopy);
     fill(color(25, 100, 100));
     stroke(color(25, 100, 100));
-    strokeWeight(8);
+    strokeWeight(2);
     line(obstacle1.pos.x, obstacle1.pos.y, endOfLine.x, endOfLine.y);
     circle(endOfLine.x, endOfLine.y, 10);
+    for (int i = 0; i < NUM_BUMPERS; i++) {
+        obstacles[i].draw();
+    }
+    ball.draw();
     if (mouseIsDown) {
         strokeWeight(4);
         PVector reflection = ball.getReflectionVector(normal);
@@ -227,6 +227,9 @@ void draw() {
         stroke(color(100, 0, 100));
         line(ball.pos.x, ball.pos.y, reflection.x, reflection.y);
     }
+    fill(0, 0, 100); // white
+    text("Score: " + score, 10, displayHeight - 30 * displayDensity);
+
 }
 
 void mousePressed() {
