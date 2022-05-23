@@ -27,9 +27,13 @@ SensorManager manager;
 Sensor sensor;
 AccelerometerListener listener;
 
+//  constants
+int NUM_NOTES = 5;
+final int NUM_BUMPERS = 10;
+
 //  sound
-String[] noteFileNames = new String[5];
-MediaPlayer[] noteMPs = new MediaPlayer[5];
+String[] noteFileNames = new String[NUM_NOTES];
+MediaPlayer[] noteMPs = new MediaPlayer[NUM_BUMPERS];
 HashMap<MediaPlayer, Boolean> mediaPreparedMap;
 
 MediaPlayer snd = new MediaPlayer();
@@ -57,17 +61,16 @@ color typeCol;
 color ballCol;
 color obstacleCol;
 
-final int NUM_BUMPERS = 10;
 Circle ball;
 Obstacle obstacle1;
 Obstacle[] obstacles = new Obstacle[NUM_BUMPERS];
 
-
+int timeTouchBegan;
 
 boolean mouseIsDown = false;
 
 void setup() {
-    println("setup");
+    println("Setting up; displayDensity: " + displayDensity);
     fullScreen();
     colorMode(HSB, 360, 100, 100);
     ellipseMode(RADIUS);
@@ -114,10 +117,10 @@ void setup() {
     for (int i = 0; i < NUM_BUMPERS; i++) {
         float x = random(100, displayWidth - 100);
         float y = (((displayHeight - 300) / NUM_BUMPERS) * i) + 150;
-        obstacles[i] = new Obstacle(new PVector(x, y), 75, 75);
+        obstacles[i] = new Obstacle(new PVector(x, y), 20 * displayDensity, 20 * displayDensity);
         // obstacles[i].setColor(color(175, 100, 100));
         // obstacles[i].setSecondaryColor(color(200, 100, 100));
-        obstacles[i].setNote(noteMPs[i % 5]);
+        obstacles[i].setNote(noteMPs[i % NUM_NOTES]);
     }
     
     circlePos = new PVector(displayWidth / 2, displayHeight / 2);
@@ -137,6 +140,7 @@ void setup() {
     obstacle1.setColor(color(255, 100, 100));
 
     hasRunSetup = true;
+    timeTouchBegan = millis();
 }
 
 void draw() {
@@ -153,7 +157,7 @@ void draw() {
     rectMode(CENTER);
     if (hasChanged) {
         sensorForce.set( -ax * 0.075, ay * 0.075);
-        if (!mouseIsDown) {
+        if (!mouseIsDown || millis() - timeTouchBegan < 1000) {
             ball.applyForce(sensorForce);
         }
         hasChanged = false;
@@ -164,8 +168,17 @@ void draw() {
     else {
         obstacle1.setColor(obstacleCol);
     }
-    if (mouseIsDown) {
+    if (mouseIsDown && millis() - timeTouchBegan > 1000) {
+        // println("We're resetting, mouse is Down");
+        timeTouchBegan = millis(); // reset every second
+        float newHue = random(360);
+        ballCol = color(newHue, 100, 100);
+        ball.setColor(ballCol);
+        ball.setVelocity(0, 0);
+        // diameter = random(100, 300);
         ball.pos.set(mouseX, mouseY);
+        snd.seekTo(0);
+        snd.start();
     } else {
         ball.bounceDisplayBoundaries();
         if (ball.doesCollideWithObstacle(obstacle1)) {
@@ -175,21 +188,18 @@ void draw() {
             if (ball.doesCollideWithObstacle(obstacles[i])) {
                 ball.bounceAgainstCircleObstacle(obstacles[i]);
                 obstacles[i].wiggle();
-                println("Trying to bump: " + mediaPreparedMap.size());
-                for(MediaPlayer mp : mediaPreparedMap.keySet()) {
-                    println("MP: " + mp);
-                    println("Value: " + mediaPreparedMap.get(mp));
-                    println("Obstacle value: " + obstacles[i].getNote());
-                }
+                // for(MediaPlayer mp : mediaPreparedMap.keySet()) {
+                //     // println("MP: " + mp);
+                //     // println("Value: " + mediaPreparedMap.get(mp));
+                //     // println("Obstacle value: " + obstacles[i].getNote());
+                // }
 
                 
                 if (mediaPreparedMap.containsKey(obstacles[i].getNote())) {
-                    println("Contains key");
                     if (mediaPreparedMap.get(obstacles[i].getNote())) {
-                        println("true");
                         obstacles[i].playNote();
                     } else {
-                        println("false");
+                        // println("false");
                     }
                 }
             }
@@ -213,7 +223,7 @@ void draw() {
     line(obstacle1.pos.x, obstacle1.pos.y, endOfLine.x, endOfLine.y);
     circle(endOfLine.x, endOfLine.y, 10);
     if (mouseIsDown) {
-    strokeWeight(4);
+        strokeWeight(4);
         PVector reflection = ball.getReflectionVector(normal);
         reflection.normalize();
         reflection.mult(50);
@@ -224,13 +234,15 @@ void draw() {
 }
 
 void mousePressed() {
+    println("mousePressed");
     mouseIsDown = true;
-    float newHue = random(360);
-    ballCol = color(newHue, 100, 100);
-    ball.setColor(ballCol);
-    ball.setVelocity(0, 0);
-    // diameter = random(100, 300);
-    ball.pos.set(mouseX, mouseY);
+    timeTouchBegan = millis();
+    // float newHue = random(360);
+    // ballCol = color(newHue, 100, 100);
+    // ball.setColor(ballCol);
+    // ball.setVelocity(0, 0);
+    // // diameter = random(100, 300);
+    // ball.pos.set(mouseX, mouseY);
     // try {
     //   //if (!snd.isPlaying()) {
     //   //  println("Preparing");
@@ -253,19 +265,18 @@ void mousePressed() {
     // catch (IOException e) {
     //     e.printStackTrace();
     // }
-    snd.seekTo(0);
-    snd.start();
 }
 
 void mouseReleased() {
+    println("mouseReleased");
     mouseIsDown = false;
 }
 
 void setUpAllMediaPlayers() {
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < NUM_BUMPERS; i++) {
         try {
             noteMPs[i] = new MediaPlayer();
-            fd = context.getAssets().openFd(noteFileNames[i]);
+            fd = context.getAssets().openFd(noteFileNames[i % NUM_NOTES]);
             noteMPs[i].setDataSource(fd.getFileDescriptor(), fd.getStartOffset(), fd.getLength());
             noteMPs[i].setOnPreparedListener(new OnPreparedListener() {
               public void onPrepared(MediaPlayer mp) {
@@ -313,7 +324,7 @@ public void onPause() {
         snd.release();
         snd = null;
     }
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < NUM_BUMPERS; i++) {
         // if (notes[i] != null) {
         //     notes[i].stop();
         // }

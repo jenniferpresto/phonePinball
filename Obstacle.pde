@@ -10,7 +10,7 @@ class Obstacle {
     MediaPlayer note;
     
     //  wiggling
-    float timeWiggledStarted;
+    int timeWiggleStarted;
     boolean isWiggling;
     int wiggleDuration = 500; // in millis
 
@@ -19,7 +19,7 @@ class Obstacle {
         this.wigglePos = pos.copy();
         this.w = w;
         this.h = h;
-        this.rad = 100;
+        this.rad = 35 * displayDensity;
         col = color(247, 66, 97);
         col2 = color(231, 61, 88);
         wiggleCol = color(8, 66, 97);
@@ -52,7 +52,7 @@ class Obstacle {
 
     void wiggle() {
         isWiggling = true;
-        timeWiggledStarted = millis();
+        timeWiggleStarted = millis();
     }
     
     void updateWigglePos() {
@@ -70,7 +70,7 @@ class Obstacle {
         if (isWiggling) {
             updateWigglePos();
             displayPos = wigglePos;
-            if (millis() - timeWiggledStarted > wiggleDuration) {
+            if (millis() - timeWiggleStarted > wiggleDuration) {
                 isWiggling = false;
             }
         } else {

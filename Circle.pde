@@ -1,7 +1,7 @@
 class Circle {
     PVector pos;
     PVector vel;
-    float rad = 50;
+    float rad = 30 * displayDensity;
     color col;
     float friction = 0.998f;
     float bouncePct = -0.55;
@@ -11,7 +11,7 @@ class Circle {
         pos = new PVector(displayWidth / 2, displayHeight / 2);
         println("Instantiate circle: " + pos);
         vel = new PVector(0, 0);
-        rad = 50;
+        rad = 30 * displayDensity;
     }
     
     void setColor(color c) {
