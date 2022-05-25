@@ -33,6 +33,7 @@ final int NUM_BUMPERS = 10;
 
 //  scoring
 int score = 0;
+boolean gameOver = false;
 
 //  sound
 String[] noteFileNames = new String[NUM_NOTES];
@@ -160,49 +161,27 @@ void draw() {
     }
 
     if (mouseIsDown && millis() - timeTouchBegan > 1000) {
-        // println("We're resetting, mouse is Down");
-        timeTouchBegan = millis(); // reset every second
-        float newHue = random(360);
-        ballCol = color(newHue, 100, 100);
-        ball.setColor(ballCol);
-        ball.setVelocity(0, 0);
-        // diameter = random(100, 300);
-        ball.pos.set(mouseX, mouseY);
-        snd.seekTo(0);
-        snd.start();
+        if (gameOver) {
+            // println("We're resetting, mouse is Down");
+            timeTouchBegan = millis(); // reset every second
+            float newHue = random(360);
+            ballCol = color(newHue, 100, 100);
+            ball.setColor(ballCol);
+            ball.setVelocity(0, 0);
+            // diameter = random(100, 300);
+            ball.pos.set(mouseX, mouseY);
+            snd.seekTo(0);
+            snd.start();
+            resetGame();
+        }
     } else {
-        ball.bounceDisplayBoundaries();
-        if (ball.doesCollideWithObstacle(obstacle1)) {
-            ball.bounceAgainstCircleObstacle(obstacle1);
+        if (!gameOver) {
+            updateBallAndObstacles();
         }
-        for (int i = 0; i < NUM_BUMPERS; i++) {
-            boolean shouldReact = true;
-            if (ball.doesCollideWithObstacle(obstacles[i])) {
-                if (obstacles[i].getType() == ObstacleType.GOOD) {
-                    if(obstacles[i].getIsHit()) {
-                        shouldReact = false;
-                    } else {
-                        score += 5;
-                        //  TODO: check all obstacles to see if finished
-                    }
-                } else if (obstacles[i].getType() == ObstacleType.BAD) {
-                    score -= 5;
-                }
-                ball.bounceAgainstCircleObstacle(obstacles[i]);
-                if (shouldReact) {
-                    obstacles[i].wiggle();
-                    if (mediaPreparedMap.containsKey(obstacles[i].getNote())) {
-                        if (mediaPreparedMap.get(obstacles[i].getNote())) {
-                            obstacles[i].playNote();
-                        }
-                    }
-                }
-            }
-        }
-        ball.updatePos();
     }
-    strokeWeight(1);
+
     //  neutral obstacle plus the pointer to the ball
+    strokeWeight(1);
     obstacle1.draw();
     PVector normal = ball.getNormalizedNormal(obstacle1);
     PVector normalCopy = normal.copy();
@@ -228,8 +207,68 @@ void draw() {
         line(ball.pos.x, ball.pos.y, reflection.x, reflection.y);
     }
     fill(0, 0, 100); // white
-    text("Score: " + score, 10, displayHeight - 30 * displayDensity);
+    String endText = gameOver ? "!!!!!" : ".";
+    text("Score: " + score + endText, 10, displayHeight - 30 * displayDensity);
 
+}
+
+void updateBallAndObstacles() {
+    ball.bounceDisplayBoundaries();
+    if (ball.doesCollideWithObstacle(obstacle1)) {
+        ball.bounceAgainstCircleObstacle(obstacle1);
+    }
+    for (int i = 0; i < NUM_BUMPERS; i++) {
+        boolean shouldReact = true;
+        if (ball.doesCollideWithObstacle(obstacles[i])) {
+            if (obstacles[i].getType() == ObstacleType.GOOD) {
+                if(obstacles[i].getIsHit()) {
+                    shouldReact = false;
+                } else {
+                    println("Hit good one... chcking");
+                    score += 5;
+                }
+            } else if (obstacles[i].getType() == ObstacleType.BAD) {
+                score -= 5;
+            }
+            ball.bounceAgainstCircleObstacle(obstacles[i]);
+            if (shouldReact) {
+                obstacles[i].wiggle();
+                if (obstacles[i].getType() == ObstacleType.GOOD) {
+                    if (didHitAllGoodObstacles()) {
+                        println("all done");
+                        gameOver = true;
+                    } else {
+                        println("NOt all done");
+                    }
+                }
+                if (mediaPreparedMap.containsKey(obstacles[i].getNote())) {
+                    if (mediaPreparedMap.get(obstacles[i].getNote())) {
+                        obstacles[i].playNote();
+                    }
+                }
+            }
+        }
+    }
+    ball.updatePos();
+}
+
+boolean didHitAllGoodObstacles() {
+    for (Obstacle o : obstacles) {
+        if (o.getType() == ObstacleType.GOOD && !o.getIsHit()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void resetGame() {
+    score = 0;
+    for (Obstacle o : obstacles) {
+        if (o.getType() == ObstacleType.GOOD) {
+            o.reset();
+        }
+    }
+    gameOver = false;
 }
 
 void mousePressed() {

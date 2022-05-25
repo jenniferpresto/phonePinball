@@ -40,6 +40,9 @@ abstract class Obstacle {
     ObstacleType getType() { return this.type; }
 
     boolean getIsHit() { return this.isHit; }
+    void reset() {
+        this.isHit = false;
+    }
     
     void setColor(color c) {
         println("set color");
@@ -130,6 +133,13 @@ class GoodObstacle extends Obstacle {
         this.col = color(127, 76, 70); // green
         this.col2 = color(127, 76, 90); // brighter green
         this.type = ObstacleType.GOOD;
+    }
+
+    @Override
+    void reset() {
+        super.reset();
+        this.col = color(127, 76, 70); // green
+        this.col2 = color(127, 76, 90); // brighter green
     }
 
     @Override
